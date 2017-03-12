@@ -1,4 +1,6 @@
+import java.util.HashSet;
 import java.util.Scanner;
+import java.util.Set;
 
 public class ConnectFour {
 
@@ -14,6 +16,10 @@ public class ConnectFour {
             }
         }
     }
+
+    public ConnectFour(char[][] board) {
+        this.board = board;
+    }
     
     public long getWaitTime() {
         return waitTime;
@@ -22,6 +28,31 @@ public class ConnectFour {
     public void setWaitTime(long newWaitTime) {
         waitTime = newWaitTime;
     }
+
+    public char[][] getBoard() {
+        //must deep clone
+        char[][] copy = new char[board.length][];
+        for (int r = 0; r < copy.length; r++) {
+            copy[r] = board[r].clone();
+        }
+        return copy;
+    }
+
+    public Set<ConnectFour> getSuccessors(){
+        Set<ConnectFour> successors = new HashSet<>();
+        for (int r = 0; r < board.length; r++) {
+            for (int c = 0; c < board.length; c++) {
+                if (board[r][c] == '-'){
+                    ConnectFour successor = new ConnectFour(this.getBoard());
+                    successor.placeToken(r, c , 'X');
+                    successors.add(successor);
+                }
+
+            }
+        }
+        return successors;
+    }
+
 
     @Override
     public String toString() {
@@ -39,6 +70,34 @@ public class ConnectFour {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    //sum of adjacent Os - sum of adjacent Xs
+    //probably too complicated
+    public int evaluation(){
+        int result = 0;
+        for (int r = 0; r < 8; r++) {
+            for (int c = 0; c < 8; c++) {
+                char token = board[r][c];
+                if (token == '-')
+                    continue; // don't check empty slots
+
+                int horizontalCounter = 1;
+                while (c + horizontalCounter < 8 &&
+                        token == board[r][c+horizontalCounter]) { //horizontal right
+                    result += (token == 'X')? -1 : 1 ;
+                    horizontalCounter++;// no winner found
+                }
+
+                int verticalCounter = 1;
+                while (r + verticalCounter < 8 &&
+                        token == board[r+verticalCounter][c]) { //vertical down
+                    result += (token == 'X')? -1 : 1 ;
+                    horizontalCounter++;
+                }
+            }
+        }
+        return result;
     }
 
     private boolean userPlayRound() {
@@ -65,17 +124,21 @@ public class ConnectFour {
         String move = "";
         do {
             //System.out.print("Enter your move: ");
+            //probably not needed^
             try {
                 Thread.sleep(this.getWaitTime());
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
-            System.out.println("A1");
             move = cpuMakeMove();
+            System.out.println(move);
             if (!isValidMove(move)) {
                 System.out.println("Invalid move or space taken. Try again.");
             }
         } while (!isValidMove(move));
+        //validation checking probably not needed^
+        //leaving it alone for debug purposes
+
         int row = (int) move.charAt(0) - 65;
         int col = Integer.parseInt(String.valueOf(move.charAt(1)));
         this.placeToken(row, (col-1), 'X');
@@ -89,6 +152,18 @@ public class ConnectFour {
 
     //hardcoded for now, this needs to change
     private static String cpuMakeMove(){
+        /*
+        * return max(Integer.MIN_VALUE, Integer.MAX_VALUE)
+        *      if TERMINAL-TEST(state)
+        *       then return UTILITY(state)
+        *      v ←−∞
+        *      for a  in ACTIONS(state) do
+        *           v ←MAX(v,MIN-VALUE(alpha, beta)))
+        *           if v >= beta
+        *               then return v
+        *           alpha = MAX(alpha, v)
+        *      return v
+        * */
         String move = "A1";
         return move;
     }
