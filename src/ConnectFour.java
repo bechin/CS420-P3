@@ -1,10 +1,10 @@
-
 import java.util.Scanner;
 
 public class ConnectFour {
 
     private char[][] board;
     private long waitTime;
+    private static final Scanner kb = new Scanner(System.in);
 
     public ConnectFour() {
         this.board = new char[8][8];
@@ -41,8 +41,7 @@ public class ConnectFour {
         return sb.toString();
     }
 
-    private void userPlayRound() {
-        Scanner kb = new Scanner(System.in);
+    private boolean userPlayRound() {
         String move = "";
         do {
             System.out.print("Enter your move: ");
@@ -54,38 +53,44 @@ public class ConnectFour {
         int row = (int) move.charAt(0) - 65;
         int col = Integer.parseInt(move.charAt(1)+"");
         this.placeToken(row, col-1, 'O');
-        if (this.checkWin()) {
-            System.out.println("User wins!");
-            System.out.println(this);
-        }
         System.out.println(this);
-        this.cpuPlayRound();
+        if (this.hasWinner()) {
+            System.out.println("User wins!");
+            return true;
+        }
+        return false;
     }
 
-    private void cpuPlayRound() {
+    private boolean cpuPlayRound() {
         String move = "";
         do {
-            System.out.print("Enter your move: ");
+            //System.out.print("Enter your move: ");
             try {
                 Thread.sleep(this.getWaitTime());
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
             System.out.println("A1");
-            move = "A1"; //hardcoded for now, this needs to change
+            move = cpuMakeMove();
             if (!isValidMove(move)) {
                 System.out.println("Invalid move or space taken. Try again.");
             }
         } while (!isValidMove(move));
         int row = (int) move.charAt(0) - 65;
-        int col = Integer.parseInt(move.charAt(1)+"");
+        int col = Integer.parseInt(String.valueOf(move.charAt(1)));
         this.placeToken(row, (col-1), 'X');
-        if (this.checkWin()) {
-            System.out.println("User wins!");
-            System.out.println(this);
-        }
         System.out.println(this);
-        this.userPlayRound();
+        if (this.hasWinner()) {
+            System.out.println("CPU wins!");
+            return true;
+        }
+        return false;
+    }
+
+    //hardcoded for now, this needs to change
+    private static String cpuMakeMove(){
+        String move = "A1";
+        return move;
     }
 
     private boolean isValidMove(String move) {
@@ -104,7 +109,7 @@ public class ConnectFour {
                 (board[firstChar-1][secondChar-1] == '-'); //space is open on board 
     }
     
-    public boolean checkWin() {
+    public boolean hasWinner() {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 8; c++) {
             char token = board[r][c];
@@ -116,11 +121,13 @@ public class ConnectFour {
                 token == board[r][c+2] &&
                 token == board[r][c+3])
                 return true;
+            //pretty sure horizontal left is redundant since we're advancing
             if (c - 3 > 0 &&
                 token == board[r][c-1] && //horizontal left
                 token == board[r][c-2] &&
                 token == board[r][c-3])
                 return true;
+            //pretty sure vertical up is redundant since we're advancing
             if (r + 3 < 8 &&
                 token == board[r+1][c] && //vertical up
                 token == board[r+2][c] &&
@@ -142,7 +149,6 @@ public class ConnectFour {
     }
 
     public static void main(String[] args) {
-        Scanner kb = new Scanner(System.in);
         System.out.println("How much time (in seconds) will you allow the computer to generate an answer?");
         long seconds;
         do {
@@ -173,10 +179,20 @@ public class ConnectFour {
         cf.setWaitTime(seconds);
         System.out.println("Initial board:");
         System.out.println(cf);
-        if (firstMove.equals("USER")) {
-            cf.userPlayRound();
-        } else {
-            cf.cpuPlayRound();
+
+        //unraveled cyclic method calls for fear of stack overflow
+        while ( !cf.hasWinner() ) {
+            if (firstMove.equals("USER")) {
+                if ( cf.userPlayRound() )
+                    break;
+                if ( cf.cpuPlayRound() )
+                    break;
+            } else {
+                if ( cf.cpuPlayRound() )
+                    break;
+                if ( cf.userPlayRound() )
+                    break;
+            }
         }
 
     }
