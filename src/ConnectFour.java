@@ -176,11 +176,6 @@ public class ConnectFour {
         String result = (row + "") + (col + "");
         return result;
     }
-    
-    private long fib(int n) {
-        if (n <= 1) return n;
-        else return fib(n-1) + fib(n-2);
-    }
 
     //hardcoded for now, this needs to change
     private String aBPruning() {
