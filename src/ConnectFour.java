@@ -1,4 +1,6 @@
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -7,6 +9,7 @@ public class ConnectFour {
     private char[][] board;
     private long waitTime;
     private static final Scanner kb = new Scanner(System.in);
+    boolean run;
 
     public ConnectFour() {
         this.board = new char[8][8];
@@ -110,8 +113,8 @@ public class ConnectFour {
             }
         } while (!isValidMove(move));
         int row = (int) move.charAt(0) - 65;
-        int col = Integer.parseInt(move.charAt(1)+"");
-        this.placeToken(row, col-1, 'O');
+        int col = Integer.parseInt(move.charAt(1) + "");
+        this.placeToken(row, col - 1, 'O');
         System.out.println(this);
         if (this.hasWinner()) {
             System.out.println("User wins!");
@@ -120,28 +123,44 @@ public class ConnectFour {
         return false;
     }
 
-    private boolean cpuPlayRound() {
-        String move = "";
-        do {
-            //System.out.print("Enter your move: ");
-            //probably not needed^
-            try {
-                Thread.sleep(this.getWaitTime());
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
+    private String cpuMakeMove() {
+        //keep track of latest best move from iterative deepening
+        ArrayList<String> bestMoves = new ArrayList<>();
+        Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                run = true;
+                while (run) {
+                    //the alpha-beta pruning with minimax call goes here inside the add function
+                    bestMoves.add(generateRandomMove());
+                    if(run == false)
+                       break;
+                }
+                synchronized(this) {
+                    this.notify();
+                }
             }
-            move = cpuMakeMove();
-            System.out.println(move);
-            if (!isValidMove(move)) {
-                System.out.println("Invalid move or space taken. Try again.");
+        }
+        );
+        t.start();
+        try {
+            synchronized (this) {
+                this.wait(this.getWaitTime());
             }
-        } while (!isValidMove(move));
-        //validation checking probably not needed^
-        //leaving it alone for debug purposes
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        run = false;
+        return bestMoves.get(bestMoves.size() - 1);
+    }
 
+    private boolean cpuPlayRound() {
+        System.out.print("CPU move is: ");
+        String move = cpuMakeMove();
+        System.out.println(move);
         int row = (int) move.charAt(0) - 65;
         int col = Integer.parseInt(String.valueOf(move.charAt(1)));
-        this.placeToken(row, (col-1), 'X');
+        this.placeToken(row, (col - 1), 'X');
         System.out.println(this);
         if (this.hasWinner()) {
             System.out.println("CPU wins!");
@@ -149,22 +168,35 @@ public class ConnectFour {
         }
         return false;
     }
+    //used for testing the timing functionality of the cpuMakeMove
+    private String generateRandomMove() {
+        Random r = new Random();
+        char row = (char) (r.nextInt(8) + 'A');
+        int col = r.nextInt(8) + 1;
+        String result = (row + "") + (col + "");
+        return result;
+    }
+    
+    private long fib(int n) {
+        if (n <= 1) return n;
+        else return fib(n-1) + fib(n-2);
+    }
 
     //hardcoded for now, this needs to change
-    private static String cpuMakeMove(){
-        /*
-        * return max(Integer.MIN_VALUE, Integer.MAX_VALUE)
-        *      if TERMINAL-TEST(state)
-        *       then return UTILITY(state)
-        *      v ←−∞
-        *      for a  in ACTIONS(state) do
-        *           v ←MAX(v,MIN-VALUE(alpha, beta)))
-        *           if v >= beta
-        *               then return v
-        *           alpha = MAX(alpha, v)
-        *      return v
-        * */
+    private String aBPruning() {
         String move = "A1";
+        /*
+         * return max(Integer.MIN_VALUE, Integer.MAX_VALUE)
+         *      if TERMINAL-TEST(state)
+         *       then return UTILITY(state)
+         *      v ←−∞
+         *      for a  in ACTIONS(state) do
+         *           v ←MAX(v,MIN-VALUE(alpha, beta)))
+         *           if v >= beta
+         *               then return v
+         *           alpha = MAX(alpha, v)
+         *      return v
+         * */
         return move;
     }
 
@@ -192,24 +224,12 @@ public class ConnectFour {
                 continue; // don't check empty slots
 
             if (c + 3 < 8 &&
-                token == board[r][c+1] && //horizontal right
+                token == board[r][c+1] && //horizontal
                 token == board[r][c+2] &&
                 token == board[r][c+3])
                 return true;
-            //pretty sure horizontal left is redundant since we're advancing
-            if (c - 3 > 0 &&
-                token == board[r][c-1] && //horizontal left
-                token == board[r][c-2] &&
-                token == board[r][c-3])
-                return true;
-            //pretty sure vertical up is redundant since we're advancing
-            if (r + 3 < 8 &&
-                token == board[r+1][c] && //vertical up
-                token == board[r+2][c] &&
-                token == board[r+3][c])
-                return true;
             if (r - 3 > 0 &&
-                token == board[r-1][c] && //vertical down
+                token == board[r-1][c] && //vertical
                 token == board[r-2][c] &&
                 token == board[r-3][c])
                 return true;
