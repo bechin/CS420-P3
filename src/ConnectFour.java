@@ -4,9 +4,12 @@ import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
-public class ConnectFour {
+public class ConnectFour implements Cloneable{
 
     private char[][] board;
+    private String lastMove;
+    private int value;
+
     private long waitTime;
     private static final Scanner kb = new Scanner(System.in);
     boolean run;
@@ -20,8 +23,15 @@ public class ConnectFour {
         }
     }
 
-    public ConnectFour(char[][] board) {
-        this.board = board;
+    @Override
+    public Object clone(){
+        try{
+            return super.clone();
+        }
+        catch (CloneNotSupportedException e){
+            e.printStackTrace();
+        }
+        return null;
     }
     
     public long getWaitTime() {
@@ -32,13 +42,16 @@ public class ConnectFour {
         waitTime = newWaitTime;
     }
 
-    public char[][] getBoard() {
-        //must deep clone
-        char[][] copy = new char[board.length][];
-        for (int r = 0; r < copy.length; r++) {
-            copy[r] = board[r].clone();
-        }
-        return copy;
+    public int getValue() {
+        return value;
+    }
+
+    public void setValue(int value) {
+        this.value = value;
+    }
+
+    public String getLastMove() {
+        return lastMove;
     }
 
     public Set<ConnectFour> getSuccessors(){
@@ -46,7 +59,7 @@ public class ConnectFour {
         for (int r = 0; r < board.length; r++) {
             for (int c = 0; c < board.length; c++) {
                 if (board[r][c] == '-'){
-                    ConnectFour successor = new ConnectFour(this.getBoard());
+                    ConnectFour successor = (ConnectFour) this.clone();
                     successor.placeToken(r, c , 'X');
                     successors.add(successor);
                 }
@@ -55,7 +68,6 @@ public class ConnectFour {
         }
         return successors;
     }
-
 
     @Override
     public String toString() {
@@ -66,7 +78,7 @@ public class ConnectFour {
         }
         sb.append("\n");
         for (int i = 0; i < board.length; i++) {
-            sb.append((char) (i + 65));
+            sb.append((char) (i + 'A'));
             for (int j = 0; j < board.length; j++) {
                 sb.append(" " + board[i][j]);
             }
@@ -168,6 +180,7 @@ public class ConnectFour {
         }
         return false;
     }
+
     //used for testing the timing functionality of the cpuMakeMove
     private String generateRandomMove() {
         Random r = new Random();
@@ -177,22 +190,33 @@ public class ConnectFour {
         return result;
     }
 
-    //hardcoded for now, this needs to change
     private String aBPruning() {
-        String move = "A1";
-        /*
-         * return max(Integer.MIN_VALUE, Integer.MAX_VALUE)
-         *      if TERMINAL-TEST(state)
-         *       then return UTILITY(state)
-         *      v ←−∞
-         *      for a  in ACTIONS(state) do
-         *           v ←MAX(v,MIN-VALUE(alpha, beta)))
-         *           if v >= beta
-         *               then return v
-         *           alpha = MAX(alpha, v)
-         *      return v
-         * */
-        return move;
+        ConnectFour theChosenOne = this.min(0, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        return theChosenOne.getLastMove();
+    }
+
+    //not yet working
+    //don't implement max yet, since it'll just be the inverse of min
+    private ConnectFour min(int depth, int alpha, int beta){
+        ConnectFour theChosenOne = (ConnectFour) this.clone();
+        theChosenOne.value = Integer.MAX_VALUE;
+
+        if ( true ){
+            return theChosenOne;
+        }
+
+        for(ConnectFour successor : this.getSuccessors()){
+            theChosenOne = (successor.value < theChosenOne.value)? successor.min(0, alpha, beta)
+                    : theChosenOne;
+
+
+            Math.min(0, successor.min(0, alpha, beta).getValue());
+            if (theChosenOne.value <= alpha) {
+                return theChosenOne;
+            }
+            beta = Math.min(beta, theChosenOne.value);
+        }
+        return theChosenOne;
     }
 
     private boolean isValidMove(String move) {
@@ -236,6 +260,7 @@ public class ConnectFour {
 
     private void placeToken(int r, int c, char token) {
         this.board[r][c] = token;
+        lastMove = (char)(r + 'A') + String.valueOf(c + 1);
     }
 
     public static void main(String[] args) {
