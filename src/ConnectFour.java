@@ -25,8 +25,8 @@ public class ConnectFour implements Cloneable{
         }
     }
 
-    //this constructor makes it easier to mock a ConnectFour object
-    //with a specific value,
+    //this constructor makes it easier to mock
+    //a ConnectFour object with a specific value,
     //namely Integer.MAX_VALUE and Integer.MIN_VALUE
     public ConnectFour(int value){
         board = null;
@@ -50,19 +50,6 @@ public class ConnectFour implements Cloneable{
         return copy;
     }
 
-    //v reverting to a deep copy constructor v
-    @Override
-    public Object clone(){
-        try{
-            return super.clone();
-        }
-        catch (CloneNotSupportedException e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-    //^ delete this after confirming redundancy ^
-    
     public long getWaitTime() {
         return waitTime;
     }
@@ -79,18 +66,15 @@ public class ConnectFour implements Cloneable{
         return lastMove;
     }
 
-    public Set<ConnectFour> getSuccessors(){
+    public Set<ConnectFour> getSuccessors(boolean isCpuMove){
         Set<ConnectFour> successors = new HashSet<>();
         for (int r = 0; r < board.length; r++) {
             for (int c = 0; c < board.length; c++) {
                 if (board[r][c] == '-'){
                     ConnectFour successor = new ConnectFour(this);
-                    successor.placeToken(r, c , 'X'); //make move
+                    successor.placeToken(r, c , (isCpuMove)? 'X' : 'O'); //make move
                     successors.add(successor);
-                    //successor.placeToken(r, c , '-'); //remove move
-                    //should no longer be necessary^
                 }
-
             }
         }
         return successors;
@@ -135,7 +119,7 @@ public class ConnectFour implements Cloneable{
                 while (r + verticalCounter < 8 &&
                         token == board[r+verticalCounter][c]) { //vertical down
                     result += (token == 'X')? -1 : 1 ;
-                    horizontalCounter++;
+                    verticalCounter++;
                 }
             }
         }
@@ -143,7 +127,7 @@ public class ConnectFour implements Cloneable{
     }
 
     private boolean userPlayRound() {
-        String move = "";
+        String move;
         do {
             System.out.print("Enter your move: ");
             move = kb.nextLine().toUpperCase();
@@ -185,7 +169,7 @@ public class ConnectFour implements Cloneable{
             @Override
             public void run() {
                 run = true;
-                for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+                for (int depth = 1; depth < Integer.MAX_VALUE; depth++) {
                     ConnectFour theChosenOne = current.min(depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
                     bestMoves.add(theChosenOne.getLastMove());
                     if(run == false)
@@ -232,18 +216,18 @@ public class ConnectFour implements Cloneable{
 
         ConnectFour theChosenOne = new ConnectFour(Integer.MAX_VALUE);
 
-        for(ConnectFour successor : this.getSuccessors()){
+        for(ConnectFour successor : this.getSuccessors(isCpuMove(depth))){
 
             ConnectFour max = successor.max(depth - 1, alpha, currentBeta);
 
-            theChosenOne = (max.value < theChosenOne.value)? max
+            theChosenOne = (max.value <= theChosenOne.value)? max
                     : theChosenOne;
 
             if (theChosenOne.value <= alpha) {
                 return theChosenOne;
             }
 
-            currentBeta= Math.min(currentBeta, theChosenOne.value);
+            currentBeta = Math.min(currentBeta, theChosenOne.value);
 
         }
 
@@ -264,22 +248,27 @@ public class ConnectFour implements Cloneable{
 
         ConnectFour theChosenOne = new ConnectFour(Integer.MIN_VALUE);
 
-        for(ConnectFour successor : this.getSuccessors()){
+        for(ConnectFour successor : this.getSuccessors(isCpuMove(depth))){
 
             ConnectFour min = successor.min(depth - 1, currentAlpha, beta);
 
-            theChosenOne = (min.getValue() > theChosenOne.value)? min
+            theChosenOne = (min.getValue() >= theChosenOne.value)? min
                     : theChosenOne;
 
             if (theChosenOne.value >= beta) {
                 return theChosenOne;
             }
 
-            currentAlpha= Math.max(currentAlpha, theChosenOne.value);
+            currentAlpha = Math.max(currentAlpha, theChosenOne.value);
 
         }
 
         return theChosenOne;
+    }
+
+    //isCpuMove is a function of the relative depth, i.e. its parity
+    private boolean isCpuMove(int n){
+        return (n & 1) == 1;
     }
 
     private boolean isValidMove(String move) {
