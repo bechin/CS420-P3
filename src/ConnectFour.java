@@ -1,3 +1,5 @@
+import org.omg.PortableInterceptor.INACTIVE;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -23,6 +25,32 @@ public class ConnectFour implements Cloneable{
         }
     }
 
+    //this constructor makes it easier to mock a ConnectFour object
+    //with a specific value,
+    //namely Integer.MAX_VALUE and Integer.MIN_VALUE
+    public ConnectFour(int value){
+        board = null;
+        lastMove = null;
+        this.value = value;
+    }
+
+    //copy constructor
+    public ConnectFour(ConnectFour that){
+        this.board = that.getBoard();
+        this.lastMove = that.getLastMove();
+        this.value = that.getValue();
+    }
+
+    //must deep clone
+    public char[][] getBoard() {
+        char[][] copy = new char[board.length][];
+        for (int r = 0; r < copy.length; r++) {
+            copy[r] = board[r].clone();
+        }
+        return copy;
+    }
+
+    //v reverting to a deep copy constructor v
     @Override
     public Object clone(){
         try{
@@ -33,6 +61,7 @@ public class ConnectFour implements Cloneable{
         }
         return null;
     }
+    //^ delete this after confirming redundancy ^
     
     public long getWaitTime() {
         return waitTime;
@@ -46,10 +75,6 @@ public class ConnectFour implements Cloneable{
         return value;
     }
 
-    public void setValue(int value) {
-        this.value = value;
-    }
-
     public String getLastMove() {
         return lastMove;
     }
@@ -59,10 +84,11 @@ public class ConnectFour implements Cloneable{
         for (int r = 0; r < board.length; r++) {
             for (int c = 0; c < board.length; c++) {
                 if (board[r][c] == '-'){
-                    ConnectFour successor = (ConnectFour) this.clone();
+                    ConnectFour successor = new ConnectFour(this);
                     successor.placeToken(r, c , 'X'); //make move
                     successors.add(successor);
-                    successor.placeToken(r, c , '-'); //remove move
+                    //successor.placeToken(r, c , '-'); //remove move
+                    //should no longer be necessary^
                 }
 
             }
@@ -126,8 +152,8 @@ public class ConnectFour implements Cloneable{
             }
         } while (!isValidMove(move));
         int row = (int) move.charAt(0) - 65;
-        int col = Integer.parseInt(move.charAt(1) + "");
-        this.placeToken(row, col - 1, 'O');
+        int col = Integer.parseInt(String.valueOf(move.charAt(1))) - 1;
+        this.placeToken(row, col, 'O');
         System.out.println(this);
         if (this.hasWinner()) {
             System.out.println("User wins!");
@@ -136,18 +162,34 @@ public class ConnectFour implements Cloneable{
         return false;
     }
 
+    private boolean cpuPlayRound() {
+        System.out.print("CPU move is: ");
+        String move = cpuMakeMove();
+        System.out.println(move);
+        int row = (int) move.charAt(0) - 65;
+        int col = Integer.parseInt(String.valueOf(move.charAt(1))) - 1;
+        this.placeToken(row, col, 'X');
+        System.out.println(this);
+        if (this.hasWinner()) {
+            System.out.println("CPU wins!");
+            return true;
+        }
+        return false;
+    }
+
+    //implements alpha-beta pruning with iterative deepening
     private String cpuMakeMove() {
-        //keep track of latest best move from iterative deepening
         ArrayList<String> bestMoves = new ArrayList<>();
+        ConnectFour current = this;
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
                 run = true;
-                while (run) {
-                    //the alpha-beta pruning with minimax call goes here inside the add function
-                    bestMoves.add(generateRandomMove());
+                for (int depth = 0; depth < Integer.MAX_VALUE; depth++) {
+                    ConnectFour theChosenOne = current.min(depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
+                    bestMoves.add(theChosenOne.getLastMove());
                     if(run == false)
-                       break;
+                        break;
                 }
                 synchronized(this) {
                     this.notify();
@@ -167,21 +209,6 @@ public class ConnectFour implements Cloneable{
         return bestMoves.get(bestMoves.size() - 1);
     }
 
-    private boolean cpuPlayRound() {
-        System.out.print("CPU move is: ");
-        String move = cpuMakeMove();
-        System.out.println(move);
-        int row = (int) move.charAt(0) - 65;
-        int col = Integer.parseInt(String.valueOf(move.charAt(1)));
-        this.placeToken(row, (col - 1), 'X');
-        System.out.println(this);
-        if (this.hasWinner()) {
-            System.out.println("CPU wins!");
-            return true;
-        }
-        return false;
-    }
-
     //used for testing the timing functionality of the cpuMakeMove
     private String generateRandomMove() {
         Random r = new Random();
@@ -191,32 +218,67 @@ public class ConnectFour implements Cloneable{
         return result;
     }
 
-    private String aBPruning() {
-        ConnectFour theChosenOne = this.min(0, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        return theChosenOne.getLastMove();
-    }
-
-    //not yet working
-    //don't implement max yet, since it'll just be the inverse of min
+    //looks clean to me, take a look?
     private ConnectFour min(int depth, int alpha, int beta){
-        ConnectFour theChosenOne = (ConnectFour) this.clone();
-        theChosenOne.value = Integer.MAX_VALUE;
-
-        if ( true ){
-            return theChosenOne;
+        if ( depth == 0 ){
+            this.value = this.evaluation();
+            return this;
         }
 
+        //original pseudocode from slides calls for reassignment of beta
+        //but changing arguments during execution makes it harder to trace
+        //so I'm copying beta into a new variable
+        int currentBeta = beta;
+
+        ConnectFour theChosenOne = new ConnectFour(Integer.MAX_VALUE);
+
         for(ConnectFour successor : this.getSuccessors()){
-            theChosenOne = (successor.value < theChosenOne.value)? successor.min(0, alpha, beta)
+
+            ConnectFour max = successor.max(depth - 1, alpha, currentBeta);
+
+            theChosenOne = (max.value < theChosenOne.value)? max
                     : theChosenOne;
 
-
-            Math.min(0, successor.min(0, alpha, beta).getValue());
             if (theChosenOne.value <= alpha) {
                 return theChosenOne;
             }
-            beta = Math.min(beta, theChosenOne.value);
+
+            currentBeta= Math.min(currentBeta, theChosenOne.value);
+
         }
+
+        return theChosenOne;
+    }
+
+    //looks clean to me, take a look?
+    private ConnectFour max(int depth, int alpha, int beta){
+        if ( depth == 0 ){
+            this.value = this.evaluation();
+            return this;
+        }
+
+        //original pseudocode from slides calls for reassignment of alpha
+        //but changing arguments during execution makes it harder to trace
+        //so I'm copying alpha into a new variable
+        int currentAlpha = alpha;
+
+        ConnectFour theChosenOne = new ConnectFour(Integer.MIN_VALUE);
+
+        for(ConnectFour successor : this.getSuccessors()){
+
+            ConnectFour min = successor.min(depth - 1, currentAlpha, beta);
+
+            theChosenOne = (min.getValue() > theChosenOne.value)? min
+                    : theChosenOne;
+
+            if (theChosenOne.value >= beta) {
+                return theChosenOne;
+            }
+
+            currentAlpha= Math.max(currentAlpha, theChosenOne.value);
+
+        }
+
         return theChosenOne;
     }
 
