@@ -60,8 +60,9 @@ public class ConnectFour implements Cloneable{
             for (int c = 0; c < board.length; c++) {
                 if (board[r][c] == '-'){
                     ConnectFour successor = (ConnectFour) this.clone();
-                    successor.placeToken(r, c , 'X');
+                    successor.placeToken(r, c , 'X'); //make move
                     successors.add(successor);
+                    successor.placeToken(r, c , '-'); //remove move
                 }
 
             }
