@@ -1,3 +1,14 @@
+/* 
+ * File:   ConnectFour.java
+ * Author: Ben Chin and Mitch Saulnier
+ * Course: CS420
+ * Due Dt: 03/15/2017
+ * 
+ * Description: Four in a row game with 
+ *              AI computer opponent
+ *
+ */
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -129,6 +140,7 @@ public class ConnectFour{
                 System.out.println("Invalid move or space taken. Try again.");
             }
         } while (!isValidMove(move));
+        //get zero based index for array placement
         int row = (int) move.charAt(0) - 65;
         int col = Integer.parseInt(String.valueOf(move.charAt(1))) - 1;
         this.placeToken(row, col, 'O');
@@ -144,6 +156,7 @@ public class ConnectFour{
         System.out.print("CPU move is: ");
         String move = cpuMakeMove();
         System.out.println(move);
+        //get zero based index for array placement
         int row = (int) move.charAt(0) - 65;
         int col = Integer.parseInt(String.valueOf(move.charAt(1))) - 1;
         this.placeToken(row, col, 'X');
@@ -159,6 +172,7 @@ public class ConnectFour{
     private String cpuMakeMove() {
         ArrayList<String> bestMoves = new ArrayList<>();
         ConnectFour current = this;
+        //used a dedicated thread to time the calculation of the iterative deepening process
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -184,6 +198,7 @@ public class ConnectFour{
             e.printStackTrace();
         }
         run = false;
+        //return the most recent best move after the time's up
         return bestMoves.get(bestMoves.size() - 1);
     }
 
@@ -262,7 +277,7 @@ public class ConnectFour{
     private boolean isCpuMove(int n){
         return (n & 1) == 1;
     }
-
+    //checks that the move is in bounds and follows the convention of letter, number
     private boolean isValidMove(String move) {
         if (move.length() != 2 || !Character.isLetter(move.charAt(0))) {
             return false;
@@ -279,6 +294,7 @@ public class ConnectFour{
                 (board[firstChar-1][secondChar-1] == '-'); //space is open on board 
     }
     
+    //checks for a win condition
     public boolean hasWinner() {
     for (int r = 0; r < 8; r++) {
         for (int c = 0; c < 8; c++) {
@@ -317,7 +333,7 @@ public class ConnectFour{
             if (seconds > 30) {
                 System.out.println("The maximum time allowed is 30 seconds. Please enter another time.");
             }
-        } while (seconds > 30);
+        } while (seconds > 30); //30 seconds is the max time alloted for the cpu move
         
         System.out.println("And who should go first?");
         String firstMove = "";
@@ -334,6 +350,7 @@ public class ConnectFour{
 
         ConnectFour cf = new ConnectFour();
         System.out.println("");
+        //convert to milliseconds for the timing function of java
         seconds *= 1000;
         cf.setWaitTime(seconds);
         System.out.println("Initial board:");
