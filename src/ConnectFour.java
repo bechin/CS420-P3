@@ -13,6 +13,15 @@ public class ConnectFour{
     private long waitTime;
     private static final Scanner kb = new Scanner(System.in);
     boolean run;
+    //heatmap of possible "4 in a rows" of which that position is a part
+    private static final int[][] evaluationTable = {{2, 3, 4, 5, 5, 4, 3, 2},
+                                                    {3, 4, 5, 6, 6, 5, 4, 3},
+                                                    {4, 5, 6, 7, 7, 6, 5, 4},
+                                                    {5, 6, 7, 8, 8, 7, 6, 5},
+                                                    {5, 6, 7, 8, 8, 7, 6, 5},
+                                                    {4, 5, 6, 7, 7, 6, 5, 4},
+                                                    {3, 4, 5, 6, 6, 5, 4, 3},
+                                                    {2, 3, 4, 5, 5, 4, 3, 2}};
 
     public ConnectFour() {
         this.board = new char[8][8];
@@ -96,8 +105,7 @@ public class ConnectFour{
         return sb.toString();
     }
 
-    //sum of adjacent Os - sum of adjacent Xs
-    //probably too complicated
+    //see evaluation table
     public int evaluation(){
         int result = 0;
         for (int r = 0; r < 8; r++) {
@@ -106,19 +114,7 @@ public class ConnectFour{
                 if (token == '-')
                     continue; // don't check empty slots
 
-                int horizontalCounter = 1;
-                while (c + horizontalCounter < 8 &&
-                        token == board[r][c+horizontalCounter]) { //horizontal right
-                    result += (token == 'X')? -1 : 1 ;
-                    horizontalCounter++;
-                }
-
-                int verticalCounter = 1;
-                while (r + verticalCounter < 8 &&
-                        token == board[r+verticalCounter][c]) { //vertical down
-                    result += (token == 'X')? -1 : 1 ;
-                    verticalCounter++;
-                }
+                result += (token == 'X')? -evaluationTable[r][c] : evaluationTable[r][c] ;
             }
         }
         return result;
