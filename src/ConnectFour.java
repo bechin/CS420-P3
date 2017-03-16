@@ -1,12 +1,10 @@
-import org.omg.PortableInterceptor.INACTIVE;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 
-public class ConnectFour implements Cloneable{
+public class ConnectFour{
 
     private char[][] board;
     private String lastMove;
@@ -112,7 +110,7 @@ public class ConnectFour implements Cloneable{
                 while (c + horizontalCounter < 8 &&
                         token == board[r][c+horizontalCounter]) { //horizontal right
                     result += (token == 'X')? -1 : 1 ;
-                    horizontalCounter++;// no winner found
+                    horizontalCounter++;
                 }
 
                 int verticalCounter = 1;
@@ -202,7 +200,6 @@ public class ConnectFour implements Cloneable{
         return result;
     }
 
-    //looks clean to me, take a look?
     private ConnectFour min(int depth, int alpha, int beta){
         if ( depth == 0 ){
             this.value = this.evaluation();
@@ -234,7 +231,6 @@ public class ConnectFour implements Cloneable{
         return theChosenOne;
     }
 
-    //looks clean to me, take a look?
     private ConnectFour max(int depth, int alpha, int beta){
         if ( depth == 0 ){
             this.value = this.evaluation();
@@ -347,7 +343,6 @@ public class ConnectFour implements Cloneable{
         System.out.println("Initial board:");
         System.out.println(cf);
 
-        //unraveled cyclic method calls for fear of stack overflow
         while ( !cf.hasWinner() ) {
             if (firstMove.equals("USER")) {
                 if ( cf.userPlayRound() )
